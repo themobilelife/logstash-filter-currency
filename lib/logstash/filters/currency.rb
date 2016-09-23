@@ -2,63 +2,59 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require "json"
+require "open-uri"
 
-# This example filter will replace the contents of the default 
-# message field with whatever you specify in the configuration.
-#
-# It is only intended to be used as an example.
 class LogStash::Filters::Currency < LogStash::Filters::Base
 
   # Setting the config_name here is required. This is how you
   # configure this filter from your Logstash config.
 
   config_name "currency"
-  
+
   # Replace the message with this value.
-  config :currency, :validate => :string, :default => "" 
-  config :fields, :validate => :array, :default => ""   
+  config :currency, :validate => :string, :default => ""
+  config :fields, :validate => :array, :default => ""
 
   public
   def register
-    # Add instance variables 
-    @currencies = JSON.parse(File.read('../currency_json/currency.json'))     
+    # Add instance variables
+    @currencies = JSON.load(open("http://finance.yahoo.com/webservice/v1/symbols/allcurrencies/quote?format=json"))
   end # def register
 
   public
-  def filter(event)    
+  def filter(event)
 
-    if @currency and event["currency"] and @fields      
+    if @currency and event["currency"] and @fields
       
       # pprice: "1.401070"
       @fields.each_with_index do |element,index|
-        # Concat USD with airline currency 
+        # Concat USD with airline currency
 
         rate = getRate("USD/" + event["currency"])
 
         # Get airline USD currency rate?
         rate2 = getRate("USD/" + @currency)
         event["converted" + @fields[index].capitalize] = (event[@fields[index]].to_f / (rate.to_f/rate2.to_f))           
-      end  
+      end
 
-      # event["convertedAmount"] = (event["amount"].to_f / (rate.to_f/rate2.to_f))            
       event["convertedCurrency"] = @currency
-    end     
+    end
 
     filter_matched(event)
 
-  end 
+  end
 
-  public 
+  public
   def getRate(currency)
-      arr = @currencies["list"]["resources"]   
+      arr = @currencies["list"]["resources"]
 
-      arr.each_with_index do |element,index| 
+      arr.each_with_index do |element,index|
           if (arr[index]["resource"]["fields"]["name"] == currency)
-            price = arr[index]["resource"]["fields"]["price"] 
-            return price  
-          end 
-      end 
+            price = arr[index]["resource"]["fields"]["price"]
+            return price
+          end
+      end
 
-      return 1  
+      return 1
   end
 end # class LogStash::Filters::Example
