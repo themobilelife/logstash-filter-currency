@@ -3,19 +3,21 @@ require 'spec_helper'
 require "logstash/filters/currency"
 
 describe LogStash::Filters::Currency do
-  describe "Set to Hello World" do
-    let(:config) do <<-CONFIG
+  describe "Set to USD and HKD" do
+    config <<-CONFIG
       filter {
         currency {
-          currency => "SGD"
+          currency => ["USD", "HKD"]
+          fields => ["amount"]
+          api_address => "52.211.135.91:8080"
         }
       }
     CONFIG
+
+    sample("currency" => "SGD", "date" => "2014-01-01", "amount" => 235) do
+      insist { subject.get("convertedAmount") }.key? "USD"
+      insist { subject.get("convertedAmount") }.key? "HKD"
     end
 
-    sample("currency" => "SGD") do
-      expect(subject).to include("currency")
-      expect(subject['currency']).to eq('SGD')
-    end
   end
 end
