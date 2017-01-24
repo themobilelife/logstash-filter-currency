@@ -42,7 +42,7 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
         quote_to_usd_rate = get_rate(currency, date)
 
         # Finally convert the amounts by first dividing the amount with the USD/BASE rate and multiplying that by the USD/QUOTE rate.
-        amount = event[field] / base_to_usd_rate * quote_to_usd_rate
+        amount = event.get(field) / base_to_usd_rate * quote_to_usd_rate
         event.set('[field_name][currency]', amount)
       end
     end
