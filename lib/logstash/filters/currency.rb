@@ -62,7 +62,9 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
         @fx[date] = JSON.load(open(url))
       rescue OpenURI::HTTPError => e
         if e.message == '404 Not Found'
-          raise "Rates for #{currency} (#{date}) could not be found!"
+          # Get dates from day before
+          url = "http://#{@api_address}/rates/#{date - 1}"
+          @fx[date] = JSON.load(open(url))
         else
           raise e
         end
