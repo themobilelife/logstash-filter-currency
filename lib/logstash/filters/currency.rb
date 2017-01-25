@@ -60,15 +60,9 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
       url = "http://#{@api_address}/rates/#{date}"
       begin
         @fx[date] = JSON.load(open(url))
-      rescue OpenURI::HTTPError => e
-        if e.message == '404 Not Found'
-          # Get dates from day before
-          url = "http://#{@api_address}/rates/#{date - 1}"
-          @fx[date] = JSON.load(open(url))
-          return @fx[date]["rates"][currency]
-        else
-          raise e
-        end
+      rescue OpenURI::HTTPError
+        # Get dates from day before
+        return get_rate(currency, date - 1)
       end
       if @fx[date]["rates"].key?(currency)
         return @fx[date]["rates"][currency]
