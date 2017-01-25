@@ -58,12 +58,20 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
     else
       # Memoize the results
       url = "http://#{@api_address}/rates/#{date}"
-      @fx[date] = JSON.load(open(url))
+      begin
+        @fx[date] = JSON.load(open(url))
+      rescue OpenURI::HTTPError => e
+        if e.message == '404 Not Found'
+          raise "Rates for #{currency} (#{date}) could not be found!"
+        else
+          raise e
+        end
+      end
       if @fx[date]["rates"].key?(currency)
         return @fx[date]["rates"][currency]
       end
     end
     # If we reach this point then we were unable to find the requested currency
-    raise "Rates for #{currency} could not be found!"
+    raise "Rates for #{currency} (#{date}) could not be found!"
   end
 end
