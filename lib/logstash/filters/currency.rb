@@ -65,6 +65,7 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
           # Get dates from day before
           url = "http://#{@api_address}/rates/#{date - 1}"
           @fx[date] = JSON.load(open(url))
+          return @fx[date]["rates"][currency]
         else
           raise e
         end
