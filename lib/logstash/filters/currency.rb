@@ -20,10 +20,7 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
 
   public
   def filter(event)
-    d = Date.parse(event.get('date'))
-
-    # Format date to DD/MM/YYYY
-    date = d.strftime("%Y-%m-%d")
+    date = Date.parse(event.get('date'))
 
     # Because USD is always the base currency we must first get the base currency rate against USD
     # For example if we wanted to do conversion SEK/EUR we would first get USD/SEK rate.
@@ -52,23 +49,27 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
 
   public
   def get_rate(currency, date)
+
+    # Format date to DD/MM/YYYY
+    date_str = date.strftime("%Y-%m-%d")
+
     # Check if we have the rates for this date memoized first
-    if @fx.key?(date) && @fx[date]["rates"].key?(currency)
-      return @fx[date]["rates"][currency]
+    if @fx.key?(date_str) && @fx[date_str]["rates"].key?(currency)
+      return @fx[date_str]["rates"][currency]
     else
       # Memoize the results
-      url = "http://#{@api_address}/rates/#{date}"
+      url = "http://#{@api_address}/rates/#{date_str}"
       begin
-        @fx[date] = JSON.load(open(url))
+        @fx[date_str] = JSON.load(open(url))
       rescue OpenURI::HTTPError
         # Get dates from day before
         return get_rate(currency, date - 1)
       end
-      if @fx[date]["rates"].key?(currency)
-        return @fx[date]["rates"][currency]
+      if @fx[date_str]["rates"].key?(currency)
+        return @fx[date_str]["rates"][currency]
       end
     end
     # If we reach this point then we were unable to find the requested currency
-    raise "Rates for #{currency} (#{date}) could not be found!"
+    raise "Rates for #{currency} (#{date_str}) could not be found!"
   end
 end
