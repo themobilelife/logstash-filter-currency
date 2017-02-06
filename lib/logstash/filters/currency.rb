@@ -9,13 +9,14 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
 
   config_name "currency"
 
-  config :currency, :validate => :array
+  config :currency, :validate => :string
   config :fields, :validate => :array
   config :api_address, :validate => :string
 
   public
   def register
     @fx = {}
+    @currency = @currency.split ","
   end
 
   public
