@@ -16,12 +16,13 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
   public
   def register
     @fx = {}
-    @currency = @currency.split ","
   end
 
   public
   def filter(event)
     date = Date.parse(event.get('date'))
+
+    @currency = event.sprintf(@currency).split ","
 
     # Because USD is always the base currency we must first get the base currency rate against USD
     # For example if we wanted to do conversion SEK/EUR we would first get USD/SEK rate.
