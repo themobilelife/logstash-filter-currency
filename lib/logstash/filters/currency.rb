@@ -22,7 +22,7 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
   def filter(event)
     date = Date.parse(event.get('date'))
 
-    @currency = event.sprintf(@currency).split ","
+    @currency = event.sprintf(@currency)
 
     # Because USD is always the base currency we must first get the base currency rate against USD
     # For example if we wanted to do conversion SEK/EUR we would first get USD/SEK rate.
@@ -36,7 +36,7 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
       field_name = "converted" + field.capitalize
       event.set('[field_name]', {})
 
-      @currency.each do |currency|
+      @currency.split(",").each do |currency|
         # Calculate quote currency rate against USD
         quote_to_usd_rate = get_rate(currency, date)
 
