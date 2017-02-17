@@ -20,7 +20,14 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
 
   public
   def filter(event)
-    date = Date.parse(event.get('date'))
+
+    dateStr = event.get('date')
+
+    begin
+      date = Date.parse(dateStr)
+    rescue TypeError
+      raise "Failed to parse #{dateStr} as a date!"
+    end
 
     @currency = event.sprintf(@currency)
 
