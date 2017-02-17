@@ -25,8 +25,13 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
 
     begin
       date = Date.parse(dateStr)
+    # This should NOT happen as these events are violating the schema.
+    # But until we can catch them earlier in the process (middleware for Firehose maybe?).
+    # We must deal with them here..
     rescue TypeError
-      raise "Failed to parse #{dateStr} as a date!"
+      puts "(ERROR) Failed to parse #{dateStr} as a date!"
+      event.cancel
+      return
     end
 
     @currency = event.sprintf(@currency)
