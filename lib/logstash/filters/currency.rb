@@ -8,8 +8,6 @@ require "date"
 class LogStash::Filters::Currency < LogStash::Filters::Base
 
   config_name "currency"
-
-  config :currency, :validate => :string
   config :fields, :validate => :array
   config :api_address, :validate => :string
 
@@ -22,6 +20,7 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
   def filter(event)
 
     dateStr = event.get('date')
+    currencies = event.get('[@metadata][quote_currency]')
 
     begin
       date = Date.parse(dateStr)
@@ -29,12 +28,10 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
     # But until we can catch them earlier in the process (middleware for Firehose maybe?).
     # We must deal with them here..
     rescue TypeError
-      puts "(ERROR) Failed to parse #{dateStr} as a date!"
+      @logger.error("(ERROR) Failed to parse #{dateStr} as a date!")
       event.cancel
       return
     end
-
-    @currency = event.sprintf(@currency)
 
     # Because USD is always the base currency we must first get the base currency rate against USD
     # For example if we wanted to do conversion SEK/EUR we would first get USD/SEK rate.
@@ -46,7 +43,7 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
       end
 
       field_name = "converted" + field.capitalize
-      converted_amounts = Hash[@currency.split(",").map do |x|
+      converted_amounts = Hash[currencies.split(",").map do |x|
           # Calculate quote currency rate against USD
           quote_to_usd_rate = get_rate(x, date)
 
