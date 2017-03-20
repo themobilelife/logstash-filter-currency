@@ -7,9 +7,9 @@ describe LogStash::Filters::Currency do
     config <<-CONFIG
       filter {
         currency {
-          currency => ["USD", "HKD"]
+          currency => "USD,HKD"
           fields => ["amount"]
-          api_address => "52.211.135.91:8080"
+          api_address => "34.250.6.139:8080"
         }
       }
     CONFIG

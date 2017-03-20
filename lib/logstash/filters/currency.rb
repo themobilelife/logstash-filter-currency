@@ -46,18 +46,17 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
       end
 
       field_name = "converted" + field.capitalize
-      event.set('[field_name]', {})
+      converted_amounts = Hash[@currency.split(",").map do |x|
+          # Calculate quote currency rate against USD
+          quote_to_usd_rate = get_rate(x, date)
 
-      @currency.split(",").each do |currency|
-        # Calculate quote currency rate against USD
-        quote_to_usd_rate = get_rate(currency, date)
+          # Finally convert the amounts by first dividing the amount with the USD/BASE rate and multiplying that by the USD/QUOTE rate.
+          amount = event.get(field) / base_to_usd_rate * quote_to_usd_rate
+          [x, amount]
+        end]
 
-        # Finally convert the amounts by first dividing the amount with the USD/BASE rate and multiplying that by the USD/QUOTE rate.
-        amount = event.get(field) / base_to_usd_rate * quote_to_usd_rate
-        event.set("[#{field_name}][#{currency}]", amount)
-      end
+      event.set(field_name, converted_amounts)
     end
-
     filter_matched(event)
   end
 
