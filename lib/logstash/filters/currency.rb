@@ -59,8 +59,10 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
       @logger.error("Filter failed!")
       @logger.error(e.message)
       @logger.error(e.backtrace.inspect)
+      @logger.error(event)
       event.cancel
       return
+    end
     filter_matched(event)
   end
 
