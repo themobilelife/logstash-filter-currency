@@ -58,7 +58,6 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
     rescue Exception => e
       @logger.error("Filter failed!")
       @logger.error(e.message)
-      @logger.error(e.backtrace.inspect)
       @logger.error(event)
       event.cancel
       return
@@ -67,7 +66,7 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
   end
 
   public
-  def get_rate(currency, date)
+  def get_rate(currency, date, retries = 3)
 
     # Format date to DD/MM/YYYY
     date_str = date.strftime("%Y-%m-%d")
@@ -82,7 +81,10 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
         @fx[date_str] = JSON.load(open(url))
       rescue OpenURI::HTTPError
         # Get dates from day before
-        return get_rate(currency, date - 1)
+        if retries > 0
+          return get_rate(currency, date - 1, retries - 1)
+        end
+        raise "Failed to get rates from currency service!"
       end
       if @fx[date_str]["rates"].key?(currency)
         return @fx[date_str]["rates"][currency]
