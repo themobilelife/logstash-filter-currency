@@ -33,27 +33,34 @@ class LogStash::Filters::Currency < LogStash::Filters::Base
       return
     end
 
-    # Because USD is always the base currency we must first get the base currency rate against USD
-    # For example if we wanted to do conversion SEK/EUR we would first get USD/SEK rate.
-    base_to_usd_rate = get_rate(event.get('currency'), date)
+    begin
+      # Because USD is always the base currency we must first get the base currency rate against USD
+      # For example if we wanted to do conversion SEK/EUR we would first get USD/SEK rate.
+      base_to_usd_rate = get_rate(event.get('currency'), date)
 
-    @fields.each do |field|
-      unless event.include?(field)
-        raise "The received event does not contain required key, #{field}!"
+      @fields.each do |field|
+        unless event.include?(field)
+          raise "The received event does not contain required key, #{field}!"
+        end
+
+        field_name = "converted" + field.capitalize
+        converted_amounts = Hash[currencies.split(",").map do |x|
+            # Calculate quote currency rate against USD
+            quote_to_usd_rate = get_rate(x, date)
+
+            # Finally convert the amounts by first dividing the amount with the USD/BASE rate and multiplying that by the USD/QUOTE rate.
+            amount = event.get(field) / base_to_usd_rate * quote_to_usd_rate
+            [x, amount]
+          end]
+
+        event.set(field_name, converted_amounts)
       end
-
-      field_name = "converted" + field.capitalize
-      converted_amounts = Hash[currencies.split(",").map do |x|
-          # Calculate quote currency rate against USD
-          quote_to_usd_rate = get_rate(x, date)
-
-          # Finally convert the amounts by first dividing the amount with the USD/BASE rate and multiplying that by the USD/QUOTE rate.
-          amount = event.get(field) / base_to_usd_rate * quote_to_usd_rate
-          [x, amount]
-        end]
-
-      event.set(field_name, converted_amounts)
-    end
+    rescue Exception => e
+      @logger.error("Filter failed!")
+      @logger.error(e.message)
+      @logger.error(e.backtrace.inspect)
+      event.cancel
+      return
     filter_matched(event)
   end
 
